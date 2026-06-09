@@ -73,7 +73,7 @@ export function evaluateLexicalLeakage(candidate: Work, targetWorks: Work[], opt
   const maxAllowedRarePhraseMatches = options.maxAllowedRarePhraseMatches ?? DEFAULT_MAX_RARE_PHRASE_MATCHES;
   const maxAllowedSharedPhraseTokens = options.maxAllowedSharedPhraseTokens ?? DEFAULT_MAX_SHARED_PHRASE_TOKENS;
   const targetLineIndex = buildTargetLineIndex(targetWorks);
-  const candidateLines = lyricLines(candidate.text);
+  const candidateLines = textLines(candidate.text);
   const exactLineMatches = uniqueMatches(
     candidateLines.flatMap((line) => {
       const normalized = normalizeText(line);
@@ -102,7 +102,7 @@ export function evaluateLexicalLeakage(candidate: Work, targetWorks: Work[], opt
 function buildTargetLineIndex(targetWorks: Work[]): Map<string, Array<{ title: string; line: string }>> {
   const index = new Map<string, Array<{ title: string; line: string }>>();
   for (const work of targetWorks) {
-    for (const line of lyricLines(work.text)) {
+    for (const line of textLines(work.text)) {
       const normalized = normalizeText(line);
       if (!normalized) continue;
       const entries = index.get(normalized) ?? [];
@@ -116,7 +116,7 @@ function buildTargetLineIndex(targetWorks: Work[]): Map<string, Array<{ title: s
 function findRarePhraseMatches(candidateText: string, targetWorks: Work[], minPhraseTokens: number): LexicalLeakageMatch[] {
   const targetPhraseIndex = new Map<string, Array<{ title: string; line: string }>>();
   for (const work of targetWorks) {
-    for (const line of lyricLines(work.text)) {
+    for (const line of textLines(work.text)) {
       const tokens = tokenize(line);
       for (let size = minPhraseTokens; size <= Math.min(6, tokens.length); size++) {
         for (let index = 0; index <= tokens.length - size; index++) {
@@ -132,7 +132,7 @@ function findRarePhraseMatches(candidateText: string, targetWorks: Work[], minPh
   }
 
   const matches: LexicalLeakageMatch[] = [];
-  for (const line of lyricLines(candidateText)) {
+  for (const line of textLines(candidateText)) {
     const tokens = tokenize(line);
     for (let size = Math.min(6, tokens.length); size >= minPhraseTokens; size--) {
       for (let index = 0; index <= tokens.length - size; index++) {
@@ -182,7 +182,7 @@ function isDistinctivePhrase(tokens: string[]): boolean {
   return tokens.filter((token) => !STOPWORDS.has(token) && token.length >= 4).length >= 2;
 }
 
-function lyricLines(text: string): string[] {
+function textLines(text: string): string[] {
   return text
     .split(/\r?\n/g)
     .map((line) => line.trim())

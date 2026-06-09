@@ -2,19 +2,19 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const source = valueAfter("--source");
-const dest = valueAfter("--dest") ?? "private-corpus/copyrighted-lyrics/modern-background";
+const dest = valueAfter("--dest") ?? "private-corpus/licensed-works/modern-background";
 const format = valueAfter("--format") ?? inferFormat(source);
-const lyricsColumn = valueAfter("--lyrics-column") ?? "lyrics";
+const textColumn = valueAfter("--text-column") ?? "text";
 const titleColumn = valueAfter("--title-column") ?? "title";
-const artistColumn = valueAfter("--artist-column") ?? "artist";
+const authorColumn = valueAfter("--author-column") ?? "author";
 const sourceType = valueAfter("--source-type") ?? "licensed";
 const sourceDescription = valueAfter("--source-description") ?? "Local dataset import";
 const limit = Number(valueAfter("--limit") ?? "0");
-const includeArtist = valueAfter("--include-artist")?.toLowerCase();
-const excludeArtist = valueAfter("--exclude-artist")?.toLowerCase();
+const includeAuthor = valueAfter("--include-author")?.toLowerCase();
+const excludeAuthor = valueAfter("--exclude-author")?.toLowerCase();
 const clearDest = process.argv.includes("--clear-dest");
 
-if (!source) throw new Error("Usage: npm run import:local-lyrics-dataset -- --source <file.csv|file.jsonl> [--dest <private-corpus/...>] [--lyrics-column lyrics] [--title-column title] [--artist-column artist]");
+if (!source) throw new Error("Usage: npm run import:local-dataset -- --source <file.csv|file.jsonl> [--dest <private-corpus/...>] [--text-column text] [--title-column title] [--author-column author]");
 if (sourceType && !["user_supplied", "licensed", "public_domain", "openly_licensed", "api_authorized"].includes(sourceType)) {
   throw new Error("--source-type must be one of user_supplied, licensed, public_domain, openly_licensed, api_authorized");
 }
@@ -24,35 +24,35 @@ const imported = [];
 if (clearDest) await rm(dest, { recursive: true, force: true });
 await mkdir(dest, { recursive: true });
 for (const row of rows) {
-  const artist = String(row[artistColumn] ?? "Unknown Artist").trim();
-  const normalizedArtist = artist.toLowerCase();
-  if (includeArtist && normalizedArtist !== includeArtist) continue;
-  if (excludeArtist && normalizedArtist === excludeArtist) continue;
-  const lyrics = String(row[lyricsColumn] ?? "").trim();
-  if (!lyrics) continue;
+  const author = String(row[authorColumn] ?? "Unknown Author").trim();
+  const normalizedAuthor = author.toLowerCase();
+  if (includeAuthor && normalizedAuthor !== includeAuthor) continue;
+  if (excludeAuthor && normalizedAuthor === excludeAuthor) continue;
+  const text = String(row[textColumn] ?? "").trim();
+  if (!text) continue;
   const title = String(row[titleColumn] ?? `Untitled ${imported.length + 1}`).trim();
-  const folder = slug(`${artist}-${title}`);
+  const folder = slug(`${author}-${title}`);
   await mkdir(join(dest, folder), { recursive: true });
-  await writeFile(join(dest, folder, "lyrics.txt"), `Title: ${title}\nArtist: ${artist}\n\n${lyrics}\n`, "utf8");
-  imported.push({ title, artist, localPath: `${folder}/lyrics.txt`, permissionNote: sourceDescription });
+  await writeFile(join(dest, folder, "work.txt"), `Title: ${title}\nAuthor: ${author}\n\n${text}\n`, "utf8");
+  imported.push({ title, author, localPath: `${folder}/work.txt`, permissionNote: sourceDescription });
   if (limit > 0 && imported.length >= limit) break;
 }
 
 await writeFile(join(dest, "manifest.json"), JSON.stringify({
-  corpusName: `Imported lyrics dataset: ${dest}`,
+  corpusName: `Imported text dataset: ${dest}`,
   sourceType,
   sourceDescription,
   redistribution: "do_not_redistribute",
   importedFrom: source,
   filters: {
-    includeArtist,
-    excludeArtist,
+    includeAuthor,
+    excludeAuthor,
     limit: limit || undefined
   },
-  songs: imported
+  works: imported
 }, null, 2), "utf8");
 
-console.log(`Imported ${imported.length} lyrics into ${dest}.`);
+console.log(`Imported ${imported.length} works into ${dest}.`);
 
 async function loadRows(path: string, selectedFormat: string): Promise<Array<Record<string, unknown>>> {
   const text = await readFile(path, "utf8");

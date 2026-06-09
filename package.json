@@ -23,10 +23,10 @@
     "experiment:modern-private-nearmiss": "tsx src/cli/run-private-modern-nearmiss-experiment.ts",
     "check:colony-house": "tsx src/cli/check-colony-house-corpus.ts",
     "experiment:colony-house": "tsx src/cli/run-colony-house-experiment.ts",
-    "check:selected-songwriter": "tsx src/cli/check-selected-songwriter-corpus.ts",
-    "experiment:selected-songwriter": "tsx src/cli/run-selected-songwriter-experiment.ts",
+    "check:selected-target": "tsx src/cli/check-selected-target-corpus.ts",
+    "experiment:selected-target": "tsx src/cli/run-selected-target-experiment.ts",
     "audit:modern-experiments": "tsx src/cli/audit-modern-experiments.ts",
-    "import:local-lyrics-dataset": "tsx src/cli/import-local-lyrics-dataset.ts",
+    "import:local-dataset": "tsx src/cli/import-local-dataset.ts",
     "hard-negatives": "tsx src/cli/build-hard-negative-corpus.ts",
     "test": "vitest run"
   },

@@ -10,13 +10,13 @@ const onlySet = valueAfter("--set") as DatasetSet | undefined;
 const adapter = getDomainAdapter(valueAfter("--domain"));
 
 async function seedTargetCorpus(): Promise<void> {
-  if (adapter.targetSeedFormat !== "directory-lyrics") return;
+  if (adapter.targetSeedFormat !== "directory-work") return;
   const sourceRoot = getTargetCorpusRoot();
   try {
     const dirs = await readdir(sourceRoot, { withFileTypes: true });
     await mkdir(dataPath(`raw/target/${adapter.rawSubdir}`), { recursive: true });
     for (const dir of dirs.filter((entry) => entry.isDirectory())) {
-      const source = join(sourceRoot, dir.name, "lyrics.txt");
+      const source = join(sourceRoot, dir.name, "work.txt");
       const dest = join(dataPath(`raw/target/${adapter.rawSubdir}`), `${dir.name.replace(/[^\w-]+/g, "-").toLowerCase()}.txt`);
       await copyFile(source, dest).catch(() => undefined);
     }

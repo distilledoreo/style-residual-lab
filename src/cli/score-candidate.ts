@@ -15,7 +15,7 @@ import { evaluateLexicalLeakage } from "../validation/lexicalLeakage.js";
 import { getDomainAdapter } from "../domains/domainAdapter.js";
 
 const candidatePath = process.argv[2];
-if (!candidatePath) throw new Error("Usage: npm run score -- <candidate-lyric.txt>");
+if (!candidatePath) throw new Error("Usage: npm run score -- <candidate-work.txt>");
 
 const existingWorks = await readJsonl<Work>(paths.works);
 const adapter = getDomainAdapter(existingWorks[0]?.domain);

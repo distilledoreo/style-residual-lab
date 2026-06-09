@@ -1,13 +1,13 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { privateModernConfigFromEnv, readinessReport, selectedSongwriterConfigFromEnv, type CorpusReadinessReport } from "./privateModernCorpus.js";
+import { privateModernConfigFromEnv, readinessReport, selectedTargetConfigFromEnv, type CorpusReadinessReport } from "./privateModernCorpus.js";
 
 const auditRoot = process.env.MODERN_AUDIT_DATA_ROOT ?? "data/private/modern-experiments-audit";
 process.env.STYLE_LAB_DATA_ROOT = auditRoot;
 
 const reports = [
   await readinessReport(privateModernConfigFromEnv("modern-private")),
-  await readinessReport(selectedSongwriterConfigFromEnv())
+  await readinessReport(selectedTargetConfigFromEnv())
 ];
 const allReady = reports.every((report) => report.ready);
 const audit = {
@@ -24,12 +24,12 @@ const audit = {
     blockers: report.blockers
   })),
   nextCommands: allReady
-    ? ["npm run experiment:modern-private", "npm run experiment:selected-songwriter"]
-    : ["npm run check:modern-private", "npm run check:selected-songwriter"],
+    ? ["npm run experiment:modern-private", "npm run experiment:selected-target"]
+    : ["npm run check:modern-private", "npm run check:selected-target"],
   notes: [
-    "This audit does not print lyric text.",
+    "This audit does not print corpus text.",
     "The active goal remains incomplete until both experiments run through the full pipeline and produce held-out residual-vs-raw reports.",
-    "The modern background corpus is shared by both experiments and should contain real modern songs from permitted local/licensed/API-authorized sources."
+    "The modern background corpus is shared by both experiments and should contain real modern works from permitted local/licensed/API-authorized sources."
   ]
 };
 
@@ -59,12 +59,12 @@ ${reports.map((report) => `| ${report.experimentId} | ${report.targetName} | ${r
 
 ## Next Step
 
-${allReady ? "- Run `npm run experiment:modern-private` and `npm run experiment:selected-songwriter`." : "- Add the missing local-only lyric files, then rerun `npm run audit:modern-experiments`."}
+${allReady ? "- Run `npm run experiment:modern-private` and `npm run experiment:selected-target`." : "- Add the missing local-only work files, then rerun `npm run audit:modern-experiments`."}
 
 ## Notes
 
-- This audit does not print lyric text.
+- This audit does not print corpus text.
 - The active goal remains incomplete until both experiments run through the full pipeline and produce held-out residual-vs-raw reports.
-- Use only user-supplied, licensed, public-domain, openly licensed, or API-authorized lyric files.
+- Use only user-supplied, licensed, public-domain, openly licensed, or API-authorized corpus files.
 `;
 }

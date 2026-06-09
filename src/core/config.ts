@@ -9,7 +9,7 @@ export function getDataRoot(): string {
 }
 
 export function getTargetCorpusRoot(): string {
-  return process.env.STYLE_LAB_TARGET_CORPUS_ROOT ?? "lyric-corpus";
+  return process.env.STYLE_LAB_TARGET_CORPUS_ROOT ?? "target-corpus";
 }
 
 export function getDomainName(): string {

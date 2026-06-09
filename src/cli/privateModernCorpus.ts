@@ -38,7 +38,7 @@ export interface CorpusManifestStatus {
   present: boolean;
   valid: boolean;
   sourceType?: string;
-  songCount?: number;
+  workCount?: number;
   issues: string[];
 }
 
@@ -48,8 +48,8 @@ export function privateModernConfigFromEnv(defaultExperimentId = "modern-private
   return {
     experimentId: process.env.MODERN_EXPERIMENT_ID ?? defaultExperimentId,
     targetName: process.env.MODERN_TARGET_NAME ?? "private target corpus",
-    targetRoot: process.env.MODERN_TARGET_CORPUS_ROOT ?? "lyric-corpus",
-    backgroundRoot: process.env.MODERN_BACKGROUND_CORPUS_ROOT ?? "private-corpus/copyrighted-lyrics/modern-background",
+    targetRoot: process.env.MODERN_TARGET_CORPUS_ROOT ?? "target-corpus",
+    backgroundRoot: process.env.MODERN_BACKGROUND_CORPUS_ROOT ?? "private-corpus/licensed-works/modern-background",
     candidateRoot: process.env.MODERN_CANDIDATE_CORPUS_ROOT,
     minTargetWorks: Number(process.env.MODERN_MIN_TARGET_WORKS ?? 12),
     minBackgroundWorks: Number(process.env.MODERN_MIN_BACKGROUND_WORKS ?? 50)
@@ -60,34 +60,34 @@ export function colonyHouseConfigFromEnv(): PrivateModernExperimentConfig {
   return {
     ...privateModernConfigFromEnv("colony-house-vs-modern"),
     targetName: process.env.MODERN_TARGET_NAME ?? "Colony House",
-    targetRoot: process.env.MODERN_TARGET_CORPUS_ROOT ?? "private-corpus/copyrighted-lyrics/colony-house",
-    backgroundRoot: process.env.MODERN_BACKGROUND_CORPUS_ROOT ?? "private-corpus/copyrighted-lyrics/modern-background",
+    targetRoot: process.env.MODERN_TARGET_CORPUS_ROOT ?? "private-corpus/licensed-works/colony-house",
+    backgroundRoot: process.env.MODERN_BACKGROUND_CORPUS_ROOT ?? "private-corpus/licensed-works/modern-background",
     minTargetWorks: Number(process.env.MODERN_MIN_TARGET_WORKS ?? 12),
     minBackgroundWorks: Number(process.env.MODERN_MIN_BACKGROUND_WORKS ?? 50)
   };
 }
 
-export function selectedSongwriterConfigFromEnv(): PrivateModernExperimentConfig {
+export function selectedTargetConfigFromEnv(): PrivateModernExperimentConfig {
   return {
     ...privateModernConfigFromEnv("green-day-vs-modern"),
     targetName: process.env.MODERN_TARGET_NAME ?? "Green Day",
-    targetRoot: process.env.MODERN_TARGET_CORPUS_ROOT ?? "private-corpus/copyrighted-lyrics/green-day",
-    backgroundRoot: process.env.MODERN_BACKGROUND_CORPUS_ROOT ?? "private-corpus/copyrighted-lyrics/modern-background",
+    targetRoot: process.env.MODERN_TARGET_CORPUS_ROOT ?? "private-corpus/licensed-works/green-day",
+    backgroundRoot: process.env.MODERN_BACKGROUND_CORPUS_ROOT ?? "private-corpus/licensed-works/modern-background",
     minTargetWorks: Number(process.env.MODERN_MIN_TARGET_WORKS ?? 12),
     minBackgroundWorks: Number(process.env.MODERN_MIN_BACKGROUND_WORKS ?? 50)
   };
 }
 
 export async function readinessReport(config: PrivateModernExperimentConfig): Promise<CorpusReadinessReport> {
-  const targetWorks = await countLyricWorks(config.targetRoot);
-  const backgroundWorks = await countLyricWorks(config.backgroundRoot);
-  const candidateWorks = config.candidateRoot ? await countLyricWorks(config.candidateRoot) : 0;
+  const targetWorks = await countWorkWorks(config.targetRoot);
+  const backgroundWorks = await countWorkWorks(config.backgroundRoot);
+  const candidateWorks = config.candidateRoot ? await countWorkWorks(config.candidateRoot) : 0;
   const targetManifest = await manifestStatus(config.targetRoot);
   const backgroundManifest = await manifestStatus(config.backgroundRoot);
   const candidateManifest = config.candidateRoot ? await manifestStatus(config.candidateRoot) : undefined;
   const blockers = [
-    targetWorks < config.minTargetWorks ? `Target corpus has ${targetWorks} lyric files; need at least ${config.minTargetWorks}.` : undefined,
-    backgroundWorks < config.minBackgroundWorks ? `Modern background corpus has ${backgroundWorks} lyric files; need at least ${config.minBackgroundWorks}.` : undefined,
+    targetWorks < config.minTargetWorks ? `Target corpus has ${targetWorks} work files; need at least ${config.minTargetWorks}.` : undefined,
+    backgroundWorks < config.minBackgroundWorks ? `Modern background corpus has ${backgroundWorks} work files; need at least ${config.minBackgroundWorks}.` : undefined,
     targetWorks > 0 && !targetManifest.valid ? `Target corpus manifest is missing or invalid: ${targetManifest.issues.join("; ")}` : undefined,
     backgroundWorks > 0 && !backgroundManifest.valid ? `Modern background corpus manifest is missing or invalid: ${backgroundManifest.issues.join("; ")}` : undefined,
     candidateWorks > 0 && candidateManifest && !candidateManifest.valid ? `Candidate corpus manifest is missing or invalid: ${candidateManifest.issues.join("; ")}` : undefined
@@ -110,9 +110,9 @@ export async function readinessReport(config: PrivateModernExperimentConfig): Pr
     ready: blockers.length === 0,
     blockers,
     notes: [
-      "Use only local user-supplied, licensed, public-domain, openly licensed, or API-authorized lyric files.",
-      "This readiness report intentionally records counts and paths only, not lyric text.",
-      "Private data roots should stay under data/private/ or data/experiments/private-* so copied raw lyrics remain ignored by Git."
+      "Use only local user-supplied, licensed, public-domain, openly licensed, or API-authorized corpus files.",
+      "This readiness report intentionally records counts and paths only, not corpus text.",
+      "Private data roots should stay under data/private/ or data/experiments/private-* so copied raw text remains ignored by Git."
     ]
   };
 }
@@ -136,13 +136,13 @@ export async function preparePrivateModernCorpus(config: PrivateModernExperiment
   return report;
 }
 
-export async function countLyricFiles(root: string): Promise<number> {
-  const files = await lyricFiles(root);
+export async function countWorkFiles(root: string): Promise<number> {
+  const files = await workContentFiles(root);
   return files.length;
 }
 
-export async function countLyricWorks(root: string): Promise<number> {
-  const files = await lyricFiles(root);
+export async function countWorkWorks(root: string): Promise<number> {
+  const files = await workContentFiles(root);
   const counts = await Promise.all(files.map(async (file) => {
     try {
       return (await parseLyricsFile(file, "target")).works.length;
@@ -156,23 +156,23 @@ export async function countLyricWorks(root: string): Promise<number> {
 export async function manifestStatus(root: string): Promise<CorpusManifestStatus> {
   const path = join(root, "manifest.json");
   const exists = await stat(path).then((info) => info.isFile()).catch(() => false);
-  if (!exists && root.replace(/\\/g, "/") === "lyric-corpus") {
+  if (!exists && root.replace(/\\/g, "/") === "target-corpus") {
     return { path, present: false, valid: true, sourceType: "user_supplied", issues: ["implicit local user-supplied corpus"] };
   }
   if (!exists) return { path, present: false, valid: false, issues: ["manifest.json is missing"] };
   try {
-    const parsed = JSON.parse(await readFile(path, "utf8")) as { sourceType?: string; songs?: unknown[] };
+    const parsed = JSON.parse(await readFile(path, "utf8")) as { sourceType?: string; works?: unknown[] };
     const issues = [
       !parsed.sourceType ? "sourceType is missing" : undefined,
       parsed.sourceType && !allowedSourceTypes.has(parsed.sourceType) ? `sourceType must be one of ${[...allowedSourceTypes].join(", ")}` : undefined,
-      !Array.isArray(parsed.songs) ? "songs must be an array" : undefined
+      !Array.isArray(parsed.works) ? "works must be an array" : undefined
     ].filter((item): item is string => Boolean(item));
     return {
       path,
       present: true,
       valid: issues.length === 0,
       sourceType: parsed.sourceType,
-      songCount: Array.isArray(parsed.songs) ? parsed.songs.length : undefined,
+      workCount: Array.isArray(parsed.works) ? parsed.works.length : undefined,
       issues
     };
   } catch (error) {
@@ -182,20 +182,20 @@ export async function manifestStatus(root: string): Promise<CorpusManifestStatus
 
 async function copyCorpus(sourceRoot: string, destRoot: string): Promise<void> {
   await mkdir(destRoot, { recursive: true });
-  const files = await lyricFiles(sourceRoot);
+  const files = await workContentFiles(sourceRoot);
   await Promise.all(files.map((file) => {
     const relativeName = relative(sourceRoot, file).replace(/\.txt$/i, "");
     return copyFile(file, join(destRoot, `${slug(relativeName)}.txt`));
   }));
 }
 
-async function lyricFiles(root: string): Promise<string[]> {
+async function workContentFiles(root: string): Promise<string[]> {
   const exists = await stat(root).then((info) => info.isDirectory()).catch(() => false);
   if (!exists) return [];
   const entries = await readdir(root, { withFileTypes: true });
   const nested = await Promise.all(entries.map(async (entry) => {
     const fullPath = join(root, entry.name);
-    if (entry.isDirectory()) return lyricFiles(fullPath);
+    if (entry.isDirectory()) return workContentFiles(fullPath);
     if (entry.isFile() && entry.name.toLowerCase().endsWith(".txt")) return [fullPath];
     return [];
   }));
@@ -211,9 +211,9 @@ function markdown(report: CorpusReadinessReport): string {
 - Target root: ${report.targetRoot}
 - Background root: ${report.backgroundRoot}
 - Candidate root: ${report.candidateRoot ?? "not configured"}
-- Target lyric files: ${report.targetWorks} / ${report.minTargetWorks} minimum
-- Modern background lyric files: ${report.backgroundWorks} / ${report.minBackgroundWorks} minimum
-- Candidate lyric files: ${report.candidateWorks}
+- Target work files: ${report.targetWorks} / ${report.minTargetWorks} minimum
+- Modern background work files: ${report.backgroundWorks} / ${report.minBackgroundWorks} minimum
+- Candidate work files: ${report.candidateWorks}
 - Target manifest: ${manifestLine(report.targetManifest)}
 - Background manifest: ${manifestLine(report.backgroundManifest)}
 - Candidate manifest: ${report.candidateManifest ? manifestLine(report.candidateManifest) : "not configured"}
@@ -235,5 +235,5 @@ function slug(value: string): string {
 function manifestLine(status: CorpusManifestStatus): string {
   if (!status.present) return `missing (${status.path})`;
   if (!status.valid) return `invalid (${status.issues.join("; ")})`;
-  return `valid (${status.sourceType}, ${status.songCount ?? 0} songs)`;
+  return `valid (${status.sourceType}, ${status.workCount ?? 0} works)`;
 }

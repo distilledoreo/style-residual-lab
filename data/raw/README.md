@@ -11,4 +11,4 @@ data/raw/
   candidates/lyrics/
 ```
 
-Populate target lyrics from `lyric-corpus/` with `npm run import`, or copy `.txt` files here directly before running the pipeline.
+Populate target works from `target-corpus/` with `npm run import`, or copy `.txt` files here directly before running the pipeline.
