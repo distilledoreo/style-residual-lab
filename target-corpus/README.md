@@ -10,4 +10,4 @@ target-corpus/
     work.txt
 ```
 
-Run `npm run import` to copy these into `data/raw/target/lyrics/` before running the pipeline.
+Run `npm run import` to copy these into `data/raw/target/<domain>/` (default: `lyrics/`) before running the pipeline.

@@ -46,7 +46,7 @@ $env:MODERN_MIN_BACKGROUND_WORKS='200'
 
 ## Importing A Local Dataset Download
 
-If you download a permitted text dataset such as the Mendeley Data `tcc_ceds_music.csv` file, import it into the ignored modern background corpus with:
+If you download a permitted text dataset (for example, the Mendeley Data `tcc_ceds_music.csv` lyrics dataset), import it into the ignored modern background corpus with:
 
 ```powershell
 npm run import:local-dataset -- --source data/private/downloads/tcc_ceds_music.csv --dest private-corpus/licensed-works/modern-background --text-column lyrics --title-column track_name --author-column artist_name --source-type openly_licensed --source-description "Mendeley Data Music Dataset: Lyrics and Metadata from 1950 to 2019, DOI 10.17632/3t9vbwxgr5.3, CC BY 4.0"

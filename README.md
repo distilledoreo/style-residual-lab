@@ -34,17 +34,14 @@ This is a practical CPU-friendly sentence-transformer model for Windows/Node loc
 
 ## Add Target Corpus Text
 
-Put target corpus text files in:
+Put target corpus text files under your active domain folder. The default domain is `lyrics`:
 
 ```text
-data/raw/target/lyrics/
+data/raw/target/<domain>/     # default: data/raw/target/lyrics/
+data/raw/background/<domain>/ # default: data/raw/background/lyrics/
 ```
 
-`target-corpus/` is a local-only folder (gitignored). It seeds target files during import. Put background/control text in:
-
-```text
-data/raw/background/lyrics/
-```
+`target-corpus/` is a local-only folder (gitignored). It seeds target files during import when using the directory-work layout (`<work>/work.txt`).
 
 Run:
 
@@ -294,7 +291,7 @@ Run a public-domain Robert Burns experiment with local embeddings:
 npm run experiment:burns
 ```
 
-This prepares a small target corpus of public-domain Burns lyric excerpts, writes all outputs under `data/experiments/robert-burns/`, generates the standard synthetic background controls, and runs the same import, split, topic, embedding, residual, centroid, training, and held-out evaluation pipeline. The fixture exists for portability testing and cross-corpus sanity checks; because it uses short excerpts and synthetic controls, its metrics should be treated as diagnostic rather than high-confidence evidence about Burns's full style.
+This prepares a small target corpus of public-domain Burns poetry excerpts, writes all outputs under `data/experiments/robert-burns/`, generates the standard synthetic background controls, and runs the same import, split, topic, embedding, residual, centroid, training, and held-out evaluation pipeline. The fixture exists for portability testing and cross-corpus sanity checks; because it uses short excerpts and synthetic controls, its metrics should be treated as diagnostic rather than high-confidence evidence about Burns's full style.
 
 ## Validation
 

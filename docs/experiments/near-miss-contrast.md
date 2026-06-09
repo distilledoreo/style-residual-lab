@@ -2,7 +2,7 @@
 
 ## Hypothesis
 
-Centroid margin alone can accept same-topic generic lyrics because those controls may be slightly closer to the target centroid than to the broad background centroid. Adding a same-topic generic near-miss centroid as an explicit contrast set should reject those controls while preserving held-out target recall.
+Centroid margin alone can accept same-topic generic text because those controls may be slightly closer to the target centroid than to the broad background centroid. Adding a same-topic generic near-miss centroid as an explicit contrast set should reject those controls while preserving held-out target recall.
 
 ## Method
 
@@ -57,6 +57,6 @@ This rejects the known failed draft while preserving all current held-out target
 
 ## Candidate Memorization Safeguard
 
-Candidate reports now include a lexical leakage gate before the final target-style decision is accepted. The gate rejects exact source-line reuse, distinctive short phrase reuse, and long contiguous token overlap with target-corpus lyrics. This catches a different failure mode than the embedding nearest-neighbor overfit score: a generated lyric can be globally distant in embedding space while still borrowing memorable wording or motifs from one source song.
+Candidate reports now include a lexical leakage gate before the final target-style decision is accepted. The gate rejects exact source-line reuse, distinctive short phrase reuse, and long contiguous token overlap with target-corpus text. This catches a different failure mode than the embedding nearest-neighbor overfit score: a generated work can be globally distant in embedding space while still borrowing memorable wording or motifs from one source work.
 
-The leakage gate is intentionally reported as a separate safeguard rather than folded into the residual score. Passing it only means the candidate avoided obvious corpus quotation; it does not prove that the residual model has isolated pure style or that the lyric is artistically successful.
+The leakage gate is intentionally reported as a separate safeguard rather than folded into the residual score. Passing it only means the candidate avoided obvious corpus quotation; it does not prove that the residual model has isolated pure style or that the work is artistically successful.

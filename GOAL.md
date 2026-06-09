@@ -1,4 +1,4 @@
-\# Goal: Build a Validated Style-Similarity Model for Target-Corpus Lyrics
+\# Goal: Build a Validated Style-Similarity Model for Target Corpus Text
 
 
 
@@ -6,15 +6,15 @@
 
 
 
-Continue developing this project until it can reliably predict whether unseen song lyrics match the target corpus style with high confidence, using a held-out validation dataset.
+Continue developing this project until it can reliably predict whether unseen text matches the target corpus style with high confidence, using a held-out validation dataset.
 
 
 
-This is \*\*not\*\* a lyric quality grader.
+This is \*\*not\*\* a text quality grader.
 
 This is \*\*not\*\* a preference model.
 
-This is \*\*not\*\* a lyric generator.
+This is \*\*not\*\* a text generator.
 
 
 
@@ -24,7 +24,7 @@ The goal is to build a subject-agnostic \*\*style membership model\*\*:
 
 ```text
 
-Given unseen lyrics, predict whether they belong stylistically to the target corpus, even if the theme/topic has not appeared in the corpus before.
+Given unseen text, predict whether it belongs stylistically to the target corpus, even if the theme/topic has not appeared in the corpus before.
 
 ```
 
@@ -36,7 +36,7 @@ The core theory remains:
 
 ```text
 
-style signal ≈ song lyrics − song topic/content
+style signal ≈ text embedding − topic/content embedding
 
 ```
 
@@ -58,9 +58,9 @@ The project is successful when it can:
 
 
 
-1\. Import a target corpus of song lyrics.
+1\. Import a target corpus.
 
-2\. Import or generate background/control lyrics.
+2\. Import or generate background/control works.
 
 3\. Split the dataset into train/validation/test sets without leakage.
 
@@ -68,9 +68,9 @@ The project is successful when it can:
 
 5\. Train and/or calibrate a style-membership model.
 
-6\. Evaluate the model on held-out lyrics that were not used in training.
+6\. Evaluate the model on held-out works that were not used in training.
 
-7\. Report whether the model can distinguish target-style lyrics from non-target-style lyrics.
+7\. Report whether the model can distinguish target-style works from non-target-style works.
 
 8\. Report confidence honestly, including uncertainty and failure cases.
 
@@ -114,7 +114,7 @@ Do not overfit the model to pass these thresholds.
 
 Do not tune on the final test set.
 
-Do not leak held-out songs into centroid construction, residual construction, prompt examples, or calibration.
+Do not leak held-out works into centroid construction, residual construction, prompt examples, or calibration.
 
 
 
@@ -132,7 +132,7 @@ The model should predict:
 
 ```text
 
-“Does this lyric resemble the target corpus’s style?”
+“Does this work resemble the target corpus’s style?”
 
 ```
 
@@ -144,13 +144,13 @@ Not:
 
 ```text
 
-“Is this lyric good?”
+“Is this work good?”
 
 “Would Joseph like this?”
 
-“Is this lyric release-worthy?”
+“Is this work release-worthy?”
 
-“Is this lyric about the same topic?”
+“Is this work about the same topic?”
 
 ```
 
@@ -186,7 +186,7 @@ npm run train-style-model
 
 npm run evaluate-style-model
 
-npm run score -- data/raw/candidates/lyrics/candidate-song.txt
+npm run score -- data/raw/candidates/lyrics/candidate-work.txt
 
 ```
 
@@ -204,9 +204,9 @@ data/reports/model\_training/heldout\_evaluation.json
 
 data/reports/model\_training/heldout\_evaluation.md
 
-data/reports/candidate\_scores/candidate-song.score.json
+data/reports/candidate\_scores/candidate-work.score.json
 
-data/reports/candidate\_scores/candidate-song.report.md
+data/reports/candidate\_scores/candidate-work.report.md
 
 ```
 
@@ -258,19 +258,19 @@ The project should support these dataset groups:
 
 target\_positive/
 
-&#x20; Real lyrics from the target corpus.
+&#x20; Real works from the target corpus.
 
 
 
 background\_negative/
 
-&#x20; Lyrics that should not be considered target-style.
+&#x20; Works that should not be considered target-style.
 
 
 
 candidate/
 
-&#x20; New lyrics to score.
+&#x20; New works to score.
 
 
 
@@ -330,7 +330,7 @@ The split metadata must be saved so results are reproducible.
 
 
 
-The background corpus should not be only random generic lyrics.
+The background corpus should not be only random generic works.
 
 
 
@@ -400,7 +400,7 @@ npm run generate-background-corpus
 
 
 
-This should generate background/control lyrics using an LLM.
+This should generate background/control works using an LLM.
 
 
 
@@ -408,15 +408,15 @@ The generated background corpus should include:
 
 
 
-1\. Generic lyrics on random themes.
+1\. Generic works on random themes.
 
-2\. Generic lyrics on themes similar to the target corpus.
+2\. Generic works on themes similar to the target corpus.
 
-3\. Lyrics with similar emotional topics but different style mechanics.
+3\. Works with similar emotional topics but different style mechanics.
 
-4\. Near-miss lyrics that intentionally imitate the target style poorly.
+4\. Near-miss works that intentionally imitate the target style poorly.
 
-5\. Mutated versions of target lyrics where topic is preserved but style mechanics are damaged.
+5\. Mutated versions of target works where topic is preserved but style mechanics are damaged.
 
 
 
@@ -428,7 +428,7 @@ For mutated target examples, preserve the broad topic but alter one or more of t
 
 remove concrete metaphor control
 
-make the chorus generic
+make a key block generic
 
 remove self-cross-examination
 
@@ -440,7 +440,7 @@ turn moral/spiritual stakes into slogans
 
 make the narrator purely self-pitying
 
-remove final-chorus development
+remove final-block development
 
 add competing metaphors
 
@@ -452,7 +452,7 @@ Generated data must be marked clearly as synthetic.
 
 
 
-Never mix synthetic background lyrics into the target-positive corpus.
+Never mix synthetic background works into the target-positive corpus.
 
 
 
@@ -514,7 +514,7 @@ artistic technique
 
 
 
-This matters because topic profiles are used to remove content signal from the lyric embedding.
+This matters because topic profiles are used to remove content signal from the text embedding.
 
 
 
@@ -540,11 +540,9 @@ full work
 
 each block/section
 
-all choruses combined
+domain-specific aggregate scopes (for example, all blocks of one type in the lyrics domain pack)
 
-bridge only if present
-
-title + chorus
+optional title-plus-key-block scope
 
 topic fields
 
@@ -724,23 +722,15 @@ residual\_style\_margin
 
 
 
-chorus\_residual\_target\_similarity
+block-type residual target similarity (domain-specific scopes)
 
-chorus\_residual\_background\_similarity
+block-type residual background similarity
 
-chorus\_style\_margin
-
-
-
-bridge\_residual\_target\_similarity
-
-bridge\_residual\_background\_similarity
-
-bridge\_style\_margin
+block-type style margin
 
 
 
-title\_chorus\_similarity\_to\_target
+title-plus-key-block similarity to target
 
 nearest\_target\_neighbor\_similarity
 
@@ -754,7 +744,7 @@ line\_count
 
 section\_count
 
-chorus\_count
+block count by type (domain-specific)
 
 bridge\_present
 
@@ -768,7 +758,7 @@ second\_person\_density
 
 repeated\_line\_ratio
 
-final\_chorus\_change\_score if detectable
+final-block change score if detectable
 
 ```
 
@@ -852,7 +842,7 @@ false negatives
 
 uncertain cases
 
-nearest target neighbor for each tested lyric
+nearest target neighbor for each tested work
 
 ```
 
@@ -878,7 +868,7 @@ Implement these tests:
 
 
 
-Each target song is removed from the target centroid/model, then scored as unseen.
+Each target work is removed from the target centroid/model, then scored as unseen.
 
 
 
@@ -886,7 +876,7 @@ Each target song is removed from the target centroid/model, then scored as unsee
 
 
 
-Group target songs by extracted mainTheme. Remove an entire theme group, train on the rest, then test the held-out theme group.
+Group target works by extracted mainTheme. Remove an entire theme group, train on the rest, then test the held-out theme group.
 
 
 
@@ -894,7 +884,7 @@ Group target songs by extracted mainTheme. Remove an entire theme group, train o
 
 
 
-Use background lyrics that share similar topics with the target corpus but are intentionally written in a different style.
+Use background works that share similar topics with the target corpus but are intentionally written in a different style.
 
 
 
@@ -1152,7 +1142,7 @@ The project is complete when:
 
 
 
-1\. The full pipeline runs from raw lyrics to trained model.
+1\. The full pipeline runs from raw corpus text to trained model.
 
 2\. The model evaluates on held-out data.
 
@@ -1160,7 +1150,7 @@ The project is complete when:
 
 4\. The reports honestly show whether the model generalizes.
 
-5\. The candidate scorer can score a new lyric not in the corpus.
+5\. The candidate scorer can score a new work not in the corpus.
 
 6\. The system distinguishes topic similarity from style similarity better than raw embedding similarity alone.
 
@@ -1294,7 +1284,7 @@ Keep JSON/JSONL storage.
 
 
 
-Keep the system modular so lyrics are one domain pack, not hard-coded into the core engine.
+Keep the system modular so each text domain is a domain pack, not hard-coded into the core engine.
 
 
 
@@ -1312,7 +1302,7 @@ The final system should answer this question:
 
 ```text
 
-Given lyrics about a new subject, can the system determine whether the writing style resembles the target corpus after accounting for topic/content?
+Given text about a new subject, can the system determine whether the writing style resembles the target corpus after accounting for topic/content?
 
 ```
 
