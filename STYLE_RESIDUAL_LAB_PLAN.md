@@ -6,7 +6,7 @@ Build a local-first creative writing style-similarity engine that estimates how 
 
 This is **not** a quality grader.  
 This is **not** a preference model.  
-This is **not** a lyric generator.  
+This is **not** a text generator.  
 This is a **topic-normalized style similarity system**.
 
 Core idea:
@@ -18,7 +18,7 @@ style signal ≈ text embedding − topic/content embedding
 Conceptually:
 
 ```text
-(song lyrics) / (song main theme or topic) = subject-agnostic style signal
+(text embedding) / (main theme or topic) = subject-agnostic style signal
 ```
 
 In implementation terms:
@@ -27,7 +27,7 @@ In implementation terms:
 style_residual = text_embedding with topic/content vector directions removed
 ```
 
-The first implementation domain should be **song lyrics**, but the project must be architected so that the same engine can later support fiction, poetry, essays, speeches, scripts, talks, captions, or other creative writing forms.
+The default implementation domain is **lyrics**, implemented as the first **domain pack**, but the project must be architected so that the same engine can support fiction, poetry, essays, speeches, scripts, talks, captions, or other creative writing forms.
 
 ---
 
@@ -41,7 +41,7 @@ It should **not** merely answer:
 
 > "Does this writing mention the same topics, objects, emotions, or imagery as the target corpus?"
 
-A bad implementation would reward a new lyric just because it mentions mirrors, paper, shame, storms, wounds, journals, or faith.
+A bad implementation would reward a new work just because it mentions mirrors, paper, shame, storms, wounds, journals, or faith.
 
 A better implementation should reward deeper stylistic mechanics:
 
@@ -50,8 +50,8 @@ A better implementation should reward deeper stylistic mechanics:
 - plainspoken diction
 - emotional argument
 - metaphor mechanics
-- chorus thesis behavior
-- bridge turn behavior
+- key block thesis behavior
+- pivot-block turn behavior
 - section-to-section motion
 - directness of address
 - self-cross-examination
@@ -71,16 +71,25 @@ Project
       Atom
 ```
 
-For lyrics:
+Generic mapping:
+
+```text
+Project = corpus / collection / folder
+Work    = one complete piece in the corpus
+Block   = section / scene / stanza / paragraph group
+Atom    = line / sentence / beat / smallest useful unit
+```
+
+Lyrics domain pack example:
 
 ```text
 Project = album / corpus / folder
 Work    = song
 Block   = verse / chorus / bridge / intro / outro
-Atom    = lyric line
+Atom    = line
 ```
 
-For fiction later:
+Fiction domain pack example:
 
 ```text
 Project = novel / story collection
@@ -89,7 +98,7 @@ Block   = scene / paragraph
 Atom    = sentence
 ```
 
-For poetry later:
+For poetry:
 
 ```text
 Project = collection
@@ -98,7 +107,7 @@ Block   = stanza
 Atom    = line
 ```
 
-The core engine must not hard-code lyrics, choruses, bridges, songs, or The Flowseph Project. Lyrics should be implemented as the first **domain pack**.
+The core engine must not hard-code any single domain. Domain-specific labels, parsers, and scopes belong in **domain packs** (lyrics is the first).
 
 ---
 
@@ -116,13 +125,7 @@ or:
 creative-style-lab
 ```
 
-If this is specifically for lyrics first, a friendly project name could be:
-
-```text
-FlowStyle Lab
-```
-
-But the repo and core code should remain generic.
+But the repo and core code should remain domain-neutral.
 
 ---
 
@@ -175,8 +178,8 @@ style-residual-lab/
 │   ├── raw/
 │   │   ├── target/
 │   │   │   └── lyrics/
-│   │   │       ├── song-001.txt
-│   │   │       ├── song-002.txt
+│   │   │       ├── work-001.txt
+│   │   │       ├── work-002.txt
 │   │   │       └── ...
 │   │   │
 │   │   ├── background/
@@ -307,13 +310,15 @@ Expected usage:
 
 ```bash
 npm run pipeline
-npm run score -- data/raw/candidates/lyrics/new-song.txt
+npm run score -- data/raw/candidates/lyrics/new-work.txt
 npm run validate
 ```
 
 ---
 
 ## Domain Config
+
+## Lyrics Domain Pack (First Implementation)
 
 Create `data/domains/lyrics.domain.json`:
 
@@ -481,7 +486,7 @@ createId("atom", blockId, atomIndex, atomText)
 
 ---
 
-## Lyrics Parser
+## Lyrics Domain Parser
 
 Implement `src/domains/lyrics/parseLyrics.ts`.
 
@@ -503,17 +508,17 @@ Requirements:
    - `[Intro]` → `intro`
    - `[Outro]` → `outro`
 4. If no bracketed labels exist, split blocks by blank lines.
-5. Split blocks into lyric lines.
+5. Split blocks into atoms (lines in the lyrics domain pack).
 6. Ignore empty lines.
 7. Preserve original full text in the `Work` record.
 8. Output works, blocks, and atoms.
 
 Add tests for:
 
-- labeled lyrics
-- unlabeled lyrics
-- repeated choruses
-- final chorus labels
+- labeled structured text
+- unlabeled structured text
+- repeated blocks
+- final-block labels
 - empty lines
 - unusual capitalization
 
@@ -574,7 +579,7 @@ It must not describe:
 Use this instruction:
 
 ```text
-Describe what this song is about without describing how it is written. Do not mention style, voice, structure, rhyme, tone, quality, or genre. Return only JSON.
+Describe what this work is about without describing how it is written. Do not mention style, voice, structure, rhyme, tone, quality, or genre. Return only JSON.
 ```
 
 Expected JSON:
@@ -624,9 +629,9 @@ Embed these scopes:
 3. each atom text
 4. each topic field individually
 5. combined topic profile text
-6. optional all-choruses scope
-7. optional bridge-only scope
-8. optional title-plus-chorus scope
+6. optional domain-specific aggregate block scopes
+7. optional single-block-type scopes
+8. optional title-plus-key-block scope
 
 Store embeddings in:
 
@@ -724,8 +729,9 @@ Build target centroids:
 ```text
 target work residual centroid
 target block residual centroid
-target chorus residual centroid
-target verse residual centroid
+target block-type residual centroids (domain-specific)
+
+background block-type residual centroids (domain-specific)
 target bridge residual centroid
 ```
 
@@ -734,8 +740,7 @@ Build background centroids:
 ```text
 background work residual centroid
 background block residual centroid
-background chorus residual centroid
-background verse residual centroid
+background block-type residual centroids (domain-specific)
 background bridge residual centroid
 ```
 
@@ -758,7 +763,7 @@ centroid = normalized mean vector of all residual vectors in that group
 
 Implement `src/cli/score-candidate.ts`.
 
-Given a candidate lyric file:
+Given a candidate work file:
 
 1. Parse it as a candidate work.
 2. Extract or load its topic profile.
@@ -842,20 +847,16 @@ This may mean the candidate is imitating or recycling one specific existing work
 Candidate reports should score sections separately when possible:
 
 ```text
-verse style similarity
-chorus style similarity
-bridge style similarity
-all-choruses style similarity
+block-type style similarity (per domain pack)
 whole-work style similarity
 ```
 
-For lyrics, this matters because a candidate may match the target style overall while having a weak chorus or bridge.
+For domain packs with distinct block types, section-level scores matter because a candidate may match the target style overall while having a weak pivot block or refrain.
 
 Report missing sections:
 
 ```text
-No bridge found.
-No chorus found.
+No matching block type found.
 ```
 
 But do not automatically fail the candidate. This app measures style similarity, not rule compliance.
@@ -901,8 +902,7 @@ Work features:
 ```text
 line count
 block count
-chorus count
-verse count
+block count by type (domain-specific)
 bridge count
 average words per line
 ```
@@ -969,16 +969,16 @@ The background corpus is optional but strongly recommended.
 
 It should include writing that may share similar subjects but does **not** share the target style.
 
-For lyric use, background examples could include:
+For the lyrics domain pack, background examples could include:
 
 ```text
-generic heartbreak lyrics
-generic worship-style lyrics
-vague inspirational lyrics
-ornate poetry-style lyrics
-nihilistic despair lyrics
-AI-generated generic lyrics
-same-theme but wrong-style lyrics
+generic heartbreak-style works
+generic worship-style works
+vague inspirational works
+ornate poetry-style works
+nihilistic despair works
+AI-generated generic works
+same-theme but wrong-style works
 ```
 
 The background corpus helps prevent the score from meaning only:
@@ -1013,11 +1013,9 @@ Each candidate report should include:
 
 ## Section Scores
 
-| Section | Target Similarity | Background Similarity | Style Margin |
+| Section (domain-specific) | Target Similarity | Background Similarity | Style Margin |
 |---|---:|---:|---:|
-| Verse | | | |
-| Chorus | | | |
-| Bridge | | | |
+| Example block type | | | |
 | Whole Work | | | |
 
 ## Nearest Target Works
@@ -1028,8 +1026,7 @@ Each candidate report should include:
 ## Warnings
 
 - No background corpus found.
-- No bridge found.
-- No chorus found.
+- No matching block type found.
 - High nearest-neighbor similarity.
 - Weak validation confidence.
 
@@ -1076,7 +1073,7 @@ Example:
     }
   },
   "warnings": [
-    "No bridge found."
+    "No matching block type found."
   ]
 }
 ```
@@ -1090,8 +1087,8 @@ Write a README explaining:
 1. What the project does.
 2. What it does not do.
 3. The concept of topic-normalized style residuals.
-4. How to add target lyrics.
-5. How to add background/control lyrics.
+4. How to add target works.
+5. How to add background/control works.
 6. How to score a candidate.
 7. How validation works.
 8. Limitations.
@@ -1105,7 +1102,7 @@ The limitations section must say:
 - Small corpora can overfit.
 - Background corpus quality matters.
 - Scores should be treated as diagnostics, not truth.
-- The system does not measure objective lyric quality.
+- The system does not measure objective text quality.
 ```
 
 ---
@@ -1117,7 +1114,7 @@ Build in this order:
 1. Project skeleton and config.
 2. JSONL read/write helpers.
 3. Deterministic IDs.
-4. Lyrics parser.
+4. Domain pack parser (lyrics first).
 5. Import command.
 6. Vector math and tests.
 7. Embedding client and cache.
@@ -1159,11 +1156,11 @@ Add Vitest tests for vector operations including dot, cosine, normalize, meanVec
 ### Codex Task 3 — Lyrics Parser
 
 ```text
-Implement the lyrics domain parser.
+Implement the lyrics domain parser (first domain pack).
 
-It should read .txt files from data/raw/target/lyrics, data/raw/background/lyrics, and data/raw/candidates/lyrics. It should parse bracketed section labels like [Verse 1], [Chorus], [Bridge]. If labels are missing, split by blank lines. Output works.jsonl, blocks.jsonl, and atoms.jsonl.
+It should read `.txt` files from `data/raw/target/lyrics`, `data/raw/background/lyrics`, and `data/raw/candidates/lyrics`. It should parse bracketed section labels like `[Verse 1]`, `[Chorus]`, `[Bridge]`. If labels are missing, split by blank lines. Output works.jsonl, blocks.jsonl, and atoms.jsonl.
 
-Add tests for labeled and unlabeled lyrics.
+Add tests for labeled and unlabeled structured text in the lyrics domain pack.
 ```
 
 ### Codex Task 4 — Topic Extraction
@@ -1199,7 +1196,7 @@ Then build target and background centroids by scope and section type.
 ```text
 Implement score-candidate.
 
-Given a candidate lyric file, parse it, extract topic profile, embed it, build residuals, compare residuals to target and background centroids, calculate style margin, nearest target similarity, overfit risk, and section-level scores.
+Given a candidate work file, parse it, extract topic profile, embed it, build residuals, compare residuals to target and background centroids, calculate style margin, nearest target similarity, overfit risk, and section-level scores.
 
 Write both JSON and Markdown reports.
 ```
@@ -1220,14 +1217,14 @@ The first working version should support:
 
 ```bash
 npm run pipeline
-npm run score -- data/raw/candidates/lyrics/new-song.txt
+npm run score -- data/raw/candidates/lyrics/new-work.txt
 ```
 
 And produce:
 
 ```text
-data/reports/candidate_scores/new-song.score.json
-data/reports/candidate_scores/new-song.report.md
+data/reports/candidate_scores/new-work.score.json
+data/reports/candidate_scores/new-work.report.md
 ```
 
 That is the first point where the app actually exists.
@@ -1238,13 +1235,13 @@ That is the first point where the app actually exists.
 
 The MVP is done when it can:
 
-1. import a lyric corpus,
-2. parse songs into sections and lines,
+1. import a target corpus,
+2. parse works into blocks and atoms,
 3. extract topic profiles,
 4. embed works, sections, lines, and topic profiles,
 5. build topic-normalized residual style vectors,
 6. build target and background centroids,
-7. score a new candidate lyric,
+7. score a new candidate work,
 8. report nearest-neighbor overfit risk,
 9. run leave-one-work-out validation,
 10. run leave-one-topic-out validation,
@@ -1262,7 +1259,7 @@ SQL database
 user accounts
 cloud sync
 fine-tuned model
-lyric generation
+text generation
 preference training
 manual line-rating workflow
 complex dashboards

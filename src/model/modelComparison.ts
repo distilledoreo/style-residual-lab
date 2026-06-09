@@ -266,7 +266,7 @@ function limitations(summary: ReturnType<typeof datasetSummary>): string[] {
     syntheticCount > 0
       ? "Synthetic background controls are useful diagnostics but are not a substitute for a large human-curated negative corpus."
       : `Background corpus contains ${backgroundCount} non-synthetic works; quality still depends on whether the contrast set is genre-, era-, and topic-appropriate.`,
-    "Model selection is embedding-only. Handcrafted lyric traits are not used for classification."
+    "Model selection is embedding-only. Handcrafted domain traits are not used for classification."
   ];
 }
 

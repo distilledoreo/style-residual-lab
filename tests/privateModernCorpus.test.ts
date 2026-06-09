@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import { countLyricFiles, manifestStatus, readinessReport } from "../src/cli/privateModernCorpus.js";
+import { countWorkFiles, manifestStatus, readinessReport } from "../src/cli/privateModernCorpus.js";
 
 const tempRoots: string[] = [];
 
@@ -11,14 +11,14 @@ describe("private modern corpus readiness", () => {
     await Promise.all(tempRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
   });
 
-  it("counts nested lyric text files without requiring committed corpus data", async () => {
+  it("counts nested work text files without requiring committed corpus data", async () => {
     const root = await mkdtemp(join(tmpdir(), "style-lab-corpus-"));
     tempRoots.push(root);
     await writeFile(join(root, "direct.txt"), "Title: Direct\n\nA line", "utf8");
-    await mkdir(join(root, "Nested Song"));
-    await writeFile(join(root, "Nested Song", "lyrics.txt"), "Title: Nested\n\nA line", "utf8");
+    await mkdir(join(root, "Nested Work"));
+    await writeFile(join(root, "Nested Work", "work.txt"), "Title: Nested\n\nA line", "utf8");
 
-    expect(await countLyricFiles(root)).toBe(2);
+    expect(await countWorkFiles(root)).toBe(2);
   });
 
   it("reports blockers when private target or background corpora are too small", async () => {
@@ -40,8 +40,8 @@ describe("private modern corpus readiness", () => {
     expect(report.targetWorks).toBe(1);
     expect(report.backgroundWorks).toBe(0);
     expect(report.blockers).toEqual([
-      "Target corpus has 1 lyric files; need at least 2.",
-      "Modern background corpus has 0 lyric files; need at least 1.",
+      "Target corpus has 1 work files; need at least 2.",
+      "Modern background corpus has 0 work files; need at least 1.",
       "Target corpus manifest is missing or invalid: manifest.json is missing"
     ]);
   });
@@ -51,13 +51,13 @@ describe("private modern corpus readiness", () => {
     tempRoots.push(root);
     await writeFile(join(root, "manifest.json"), JSON.stringify({
       sourceType: "openly_licensed",
-      songs: [{ title: "Example", localPath: "example/lyrics.txt" }]
+      works: [{ title: "Example", localPath: "example/work.txt" }]
     }), "utf8");
 
     const status = await manifestStatus(root);
 
     expect(status.valid).toBe(true);
     expect(status.sourceType).toBe("openly_licensed");
-    expect(status.songCount).toBe(1);
+    expect(status.workCount).toBe(1);
   });
 });

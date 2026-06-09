@@ -1,11 +1,11 @@
 # Style Residual Lab
 
-Style Residual Lab is a local-first TypeScript CLI for estimating whether unseen lyrics match a target corpus's writing style after reducing topic/content signal.
+Style Residual Lab is a local-first TypeScript CLI for estimating whether unseen text matches a target corpus's writing style after reducing topic/content signal.
 
-It is not a lyric quality grader, preference model, release-readiness judge, or lyric generator. The primary diagnostic is topic-normalized style similarity:
+It is not a text quality grader, preference model, release-readiness judge, or text generator. The primary diagnostic is topic-normalized style similarity:
 
 ```text
-style residual = lyric embedding - projection onto topic/content embedding directions
+style residual = text embedding - projection onto topic/content embedding directions
 ```
 
 ## Setup
@@ -32,19 +32,16 @@ LOCAL_EMBEDDING_MODEL=Xenova/all-MiniLM-L6-v2
 
 This is a practical CPU-friendly sentence-transformer model for Windows/Node local evaluation. It is not identical to OpenAI embeddings, so reports distinguish local embedding results from OpenAI embedding results.
 
-## Add Lyrics
+## Add Target Corpus Text
 
-Put target corpus text files in:
-
-```text
-data/raw/target/lyrics/
-```
-
-`lyric-corpus/` is a local-only folder (gitignored). It seeds target files during import. Put background/control lyrics in:
+Put target corpus text files under your active domain folder. The default domain is `lyrics`:
 
 ```text
-data/raw/background/lyrics/
+data/raw/target/<domain>/     # default: data/raw/target/lyrics/
+data/raw/background/<domain>/ # default: data/raw/background/lyrics/
 ```
+
+`target-corpus/` is a local-only folder (gitignored). It seeds target files during import when using the directory-work layout (`<work>/work.txt`).
 
 Run:
 
@@ -59,11 +56,15 @@ STYLE_LAB_DATA_ROOT=data/experiments/my-run
 STYLE_LAB_TARGET_CORPUS_ROOT=path/to/target-corpus
 ```
 
-The target corpus root should contain one directory per work, each with a `lyrics.txt` file. The default remains `lyric-corpus/`.
+The target corpus root should contain one directory per work, each with a `work.txt` file. The default remains `target-corpus/`.
+
+## Lyrics Domain (Default)
+
+Lyrics are the default domain (`STYLE_LAB_DOMAIN=lyrics`). Raw inputs live under `data/raw/{target,background,candidates}/lyrics/`. Works may use verse/chorus/bridge section headers; the parser normalizes those into domain-specific blocks.
 
 ## Adapt To Another Text Domain
 
-The core model uses domain-neutral `work -> block -> atom` records. Lyrics are the default domain, but the same residual pipeline can run on another text domain by setting `STYLE_LAB_DOMAIN` and providing plain `.txt` files under domain-specific raw folders:
+The core model uses domain-neutral `work -> block -> atom` records. The same residual pipeline can run on another text domain by setting `STYLE_LAB_DOMAIN` and providing plain `.txt` files under domain-specific raw folders:
 
 ```text
 data/raw/target/<domain>/
@@ -166,50 +167,50 @@ Target corpus summary or representative non-sensitive excerpts:
 Generate <N> works.
 ```
 
-## Private Copyrighted Corpora
+## Private Licensed Corpora
 
-For private, local-only experiments with copyrighted or licensed lyrics, put files under:
+For private, local-only experiments with copyrighted or licensed text, put files under:
 
 ```text
-private-corpus/copyrighted-lyrics/
+private-corpus/licensed-works/
 ```
 
-Use an ignored private data root so imported raw lyrics and derived artifacts are not committed:
+Use an ignored private data root so imported raw text and derived artifacts are not committed:
 
 ```powershell
-$env:STYLE_LAB_TARGET_CORPUS_ROOT='private-corpus/copyrighted-lyrics'
-$env:STYLE_LAB_DATA_ROOT='data/private/my-songwriter-run'
+$env:STYLE_LAB_TARGET_CORPUS_ROOT='private-corpus/licensed-works'
+$env:STYLE_LAB_DATA_ROOT='data/private/my-target-run'
 npm run pipeline
 ```
 
-Do not place copyrighted lyrics in committed fixtures, public experiment folders, pull requests, issue comments, or shared reports. The repo tracks only placeholder README files in `private-corpus/`; actual lyric files in that tree are ignored.
+Do not place copyrighted text in committed fixtures, public experiment folders, pull requests, issue comments, or shared reports. The repo tracks only placeholder README files in `private-corpus/`; actual work files in that tree are ignored.
 
 For the two modern private experiments, use this local-only layout:
 
 ```text
-private-corpus/copyrighted-lyrics/user-target/
-private-corpus/copyrighted-lyrics/green-day/
-private-corpus/copyrighted-lyrics/modern-background/
+private-corpus/licensed-works/user-target/
+private-corpus/licensed-works/green-day/
+private-corpus/licensed-works/modern-background/
 ```
 
-Each work can be a direct `.txt` file or a directory containing `lyrics.txt`. Check readiness without printing lyric text:
+Each work can be a direct `.txt` file or a directory containing `work.txt`. Check readiness without printing corpus text:
 
 ```powershell
 npm run audit:modern-experiments
 npm run check:modern-private
-npm run check:selected-songwriter
+npm run check:selected-target
 ```
 
 Run the full private experiments when the readiness checks pass:
 
 ```powershell
 npm run experiment:modern-private
-npm run experiment:selected-songwriter
+npm run experiment:selected-target
 ```
 
 These commands require at least 12 target files and 50 modern background files by default. Override `MODERN_MIN_TARGET_WORKS` and `MODERN_MIN_BACKGROUND_WORKS` for stricter runs.
 
-To specifically test whether topic-normalized residuals reject same-topic generic lyrics and attempted lookalikes rather than rewarding topic proximity, run the near-miss variant:
+To specifically test whether topic-normalized residuals reject same-topic generic text and attempted lookalikes rather than rewarding topic proximity, run the near-miss variant:
 
 ```powershell
 npm run experiment:modern-private-nearmiss
@@ -236,13 +237,13 @@ npm run hard-negatives -- --per-target 8 --split-aware --strategy target-centroi
 
 `target-centroid` selects background works closest to the raw target centroid within each split, directly stress-testing whether raw centroid similarity remains too strong.
 
-To import a locally downloaded CSV/JSON/JSONL lyrics dataset into an ignored private corpus, use:
+To import a locally downloaded CSV/JSON/JSONL dataset into an ignored private corpus, use:
 
 ```powershell
-npm run import:local-lyrics-dataset -- --source data/private/downloads/tcc_ceds_music.csv --dest private-corpus/copyrighted-lyrics/modern-background --lyrics-column lyrics --title-column track_name --artist-column artist_name --source-type openly_licensed --source-description "Mendeley Data Music Dataset: Lyrics and Metadata from 1950 to 2019, DOI 10.17632/3t9vbwxgr5.3, CC BY 4.0"
+npm run import:local-dataset -- --source data/private/downloads/tcc_ceds_music.csv --dest private-corpus/licensed-works/modern-background --text-column lyrics --title-column track_name --author-column artist_name --source-type openly_licensed --source-description "Mendeley Data Music Dataset: Lyrics and Metadata from 1950 to 2019, DOI 10.17632/3t9vbwxgr5.3, CC BY 4.0"
 ```
 
-The importer writes one local `lyrics.txt` per song plus a source manifest. It does not make the imported lyric text safe to commit; keep it under `private-corpus/` and `data/private/`.
+The importer writes one local `work.txt` per work plus a source manifest. It does not make the imported text safe to commit; keep it under `private-corpus/` and `data/private/`.
 
 ## Commands
 
@@ -256,10 +257,31 @@ npm run residuals
 npm run centroids
 npm run train-style-model
 npm run evaluate-style-model
-npm run score -- data/raw/candidates/lyrics/new-song.txt
+npm run score -- data/raw/candidates/lyrics/new-work.txt
 ```
 
 Reports are written to `data/reports/model_training/` and `data/reports/candidate_scores/`.
+
+## Migration From Lyric-Specific Paths
+
+If you have existing local data from before this rename, move folders and files once:
+
+```powershell
+# Seed corpus folder
+Rename-Item lyric-corpus target-corpus -ErrorAction SilentlyContinue
+Get-ChildItem target-corpus -Directory | ForEach-Object {
+  $old = Join-Path $_.FullName "lyrics.txt"
+  $new = Join-Path $_.FullName "work.txt"
+  if (Test-Path $old) { Rename-Item $old $new }
+}
+
+# Private corpus tree
+Rename-Item private-corpus/copyrighted-lyrics private-corpus/licensed-works -ErrorAction SilentlyContinue
+Get-ChildItem private-corpus/licensed-works -Recurse -Filter lyrics.txt | ForEach-Object {
+  Rename-Item $_.FullName work.txt
+}
+# In each manifest.json, rename the top-level "songs" array to "works"
+```
 
 ## Alternate Corpus Experiment
 
@@ -269,7 +291,7 @@ Run a public-domain Robert Burns experiment with local embeddings:
 npm run experiment:burns
 ```
 
-This prepares a small target corpus of public-domain Burns lyric excerpts, writes all outputs under `data/experiments/robert-burns/`, generates the standard synthetic background controls, and runs the same import, split, topic, embedding, residual, centroid, training, and held-out evaluation pipeline. The fixture exists for portability testing and cross-corpus sanity checks; because it uses short excerpts and synthetic controls, its metrics should be treated as diagnostic rather than high-confidence evidence about Burns's full style.
+This prepares a small target corpus of public-domain Burns poetry excerpts, writes all outputs under `data/experiments/robert-burns/`, generates the standard synthetic background controls, and runs the same import, split, topic, embedding, residual, centroid, training, and held-out evaluation pipeline. The fixture exists for portability testing and cross-corpus sanity checks; because it uses short excerpts and synthetic controls, its metrics should be treated as diagnostic rather than high-confidence evidence about Burns's full style.
 
 ## Validation
 
@@ -286,13 +308,13 @@ Training compares multiple simple models:
 - residual target centroid similarity,
 - raw target centroid similarity.
 
-The selected threshold is chosen on the validation split only and then applied unchanged to the test split. For dual-gate residual models, validation also selects a minimum target-centroid similarity floor. The standard dual gate optimizes the same validation metrics as the other models. The strict dual gate prefers the highest target-similarity floor that still meets the configured validation acceptance thresholds, allowing the configured recall floor rather than requiring perfect validation recall. A candidate must clear both the residual margin threshold and the target-similarity floor to be accepted by either dual-gate model. The near-miss contrast model uses train-split same-topic generic and attempted-lookalike controls as an additional negative centroid and scores target similarity against the stronger of broad-background similarity and hard-negative similarity. When the strict contrast model still meets validation acceptance, selection prefers it because the intended use is adversarial rejection of plausible failed drafts, not maximizing permissive recall. Handcrafted lyric traits are not used for classification or model selection; they are only optional diagnostics so the core experiment lives or dies on raw embeddings versus topic-normalized residual embeddings.
+The selected threshold is chosen on the validation split only and then applied unchanged to the test split. For dual-gate residual models, validation also selects a minimum target-centroid similarity floor. The standard dual gate optimizes the same validation metrics as the other models. The strict dual gate prefers the highest target-similarity floor that still meets the configured validation acceptance thresholds, allowing the configured recall floor rather than requiring perfect validation recall. A candidate must clear both the residual margin threshold and the target-similarity floor to be accepted by either dual-gate model. The near-miss contrast model uses train-split same-topic generic and attempted-lookalike controls as an additional negative centroid and scores target similarity against the stronger of broad-background similarity and hard-negative similarity. When the strict contrast model still meets validation acceptance, selection prefers it because the intended use is adversarial rejection of plausible failed drafts, not maximizing permissive recall. Handcrafted domain traits are not used for classification or model selection; they are only optional diagnostics so the core experiment lives or dies on raw embeddings versus topic-normalized residual embeddings.
 
 The strict contrast model also applies a small operational contrast margin floor, configured by `STYLE_LAB_MIN_CONTRAST_MARGIN` and defaulting to `0.05`, when that floor still passes validation acceptance. This prevents near-zero positive margins from counting as confident style matches.
 
 Reports include held-out metrics, false positives, false negatives, uncertain cases, nearest target neighbor, overfit risk, raw-vs-residual comparison, leave-one-work-out diagnostics, leave-one-topic-out diagnostics, and limitations. Success requires a residual embedding model to meet the target metrics and beat raw embedding baselines. If the run misses that bar, the held-out report includes a residual-focused failure report instead of claiming success.
 
-When same-topic generic near-miss controls or attempted-lookalike controls are present, success also requires rejecting those controls. This is a hard check for the failure mode where residualization still rewards topic-adjacent, generic AI-like lyrics instead of isolating a durable style signal.
+When same-topic generic near-miss controls or attempted-lookalike controls are present, success also requires rejecting those controls. This is a hard check for the failure mode where residualization still rewards topic-adjacent, generic AI-like text instead of isolating a durable style signal.
 
 Candidate scoring also includes a lexical leakage gate against the target corpus. A candidate cannot be labeled target-style if it reuses exact source lines, distinctive short source phrases, or a long contiguous source-corpus token run beyond the configured limits. The gate is separate from embedding similarity: it is an anti-memorization safeguard, not evidence of style quality. Candidate reports list the matched source wording so a passing embedding score can still be rejected when it is really corpus quotation.
 
@@ -306,4 +328,4 @@ See `docs/experiments/near-miss-contrast.md` for the current near-miss contrast 
 - Small corpora can overfit.
 - Background corpus quality matters.
 - Scores should be treated as diagnostics, not truth.
-- The system does not measure objective lyric quality.
+- The system does not measure objective text quality.

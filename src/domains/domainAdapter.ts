@@ -7,7 +7,7 @@ import { parseStructuredTextFile, type ParsedTextCorpus } from "./generic/parseS
 export interface DomainAdapter {
   name: string;
   rawSubdir: string;
-  targetSeedFormat: "directory-lyrics" | "flat-text";
+  targetSeedFormat: "directory-work" | "flat-text";
   sectionTypes: string[];
   parseFile(sourcePath: string, set: DatasetSet, root?: string): Promise<ParsedTextCorpus>;
   featureExtractors: {
@@ -26,7 +26,7 @@ export function getDomainAdapter(domainName = getDomainName()): DomainAdapter {
 const lyricsAdapter: DomainAdapter = {
   name: "lyrics",
   rawSubdir: "lyrics",
-  targetSeedFormat: "directory-lyrics",
+  targetSeedFormat: "directory-work",
   sectionTypes: ["verse", "chorus", "bridge"],
   parseFile: parseLyricsFile,
   featureExtractors: {
