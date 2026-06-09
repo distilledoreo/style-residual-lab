@@ -1,0 +1,31 @@
+node_modules/
+dist/
+.env
+data/processed/
+data/features/
+data/embeddings/
+data/models/
+data/reports/
+
+# Local lyric corpora. Never commit lyrics, audio, manifests, or other corpus files.
+lyric-corpus/*
+!lyric-corpus/README.md
+
+private-corpus/*
+!private-corpus/README.md
+
+# Pipeline raw inputs imported from local corpora.
+data/raw/*
+!data/raw/README.md
+
+# Experiment trees copy raw lyrics and embed text in derived outputs.
+data/experiments/**/raw/
+data/experiments/**/processed/
+data/experiments/**/features/
+data/experiments/**/embeddings/
+data/experiments/**/models/
+data/experiments/**/reports/
+
+# Isolated private experiment outputs can contain copied raw lyrics.
+data/private/
+data/experiments/private-*/

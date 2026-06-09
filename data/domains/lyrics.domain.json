@@ -1,0 +1,10 @@
+{
+  "domain": "lyrics",
+  "workLabel": "song",
+  "blockLabel": "section",
+  "atomLabel": "line",
+  "sectionLabels": ["intro", "verse", "pre-chorus", "chorus", "post-chorus", "bridge", "outro", "refrain"],
+  "embeddingScopes": ["atom", "block", "work", "all_choruses", "bridge_only", "title_plus_chorus"],
+  "residualScopes": ["block", "work", "all_choruses", "bridge_only"],
+  "topicFields": ["mainTheme", "emotionalSubject", "centralSituation", "centralImage", "contentOnlySummary"]
+}
