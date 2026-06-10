@@ -24,12 +24,15 @@ export function normalizeSectionLabel(label: string): string {
   return cleaned.replace(/\s+/g, "-") || "section";
 }
 
+const METADATA_LINE_RE = /^\s*(synthetic-control-type|source|author)\s*:/i;
+
 function titleFromChunk(chunk: string, sourcePath: string, index: number): { title: string; text: string } {
   const lines = chunk.split(/\r?\n/);
   const titleLineIndex = lines.findIndex((line) => /^title\s*:/i.test(line.trim()));
   const metadataLineIndexes = new Set<number>();
-  const syntheticTypeIndex = lines.findIndex((line) => /^synthetic-control-type\s*:/i.test(line.trim()));
-  if (syntheticTypeIndex >= 0) metadataLineIndexes.add(syntheticTypeIndex);
+  lines.forEach((line, lineIndex) => {
+    if (METADATA_LINE_RE.test(line)) metadataLineIndexes.add(lineIndex);
+  });
   if (titleLineIndex >= 0) {
     metadataLineIndexes.add(titleLineIndex);
     const title = lines[titleLineIndex].replace(/^title\s*:/i, "").trim();
@@ -38,7 +41,8 @@ function titleFromChunk(chunk: string, sourcePath: string, index: number): { tit
   }
   const parent = basename(dirname(sourcePath));
   const file = basename(sourcePath, ".txt");
-  return { title: parent === "." ? file : parent, text: chunk.trim() };
+  const text = lines.filter((_, lineIndex) => !metadataLineIndexes.has(lineIndex)).join("\n").trim();
+  return { title: parent === "." ? file : parent, text: text || chunk.trim() };
 }
 
 function parseBlocks(work: Work): { blocks: Block[]; atoms: Atom[] } {
