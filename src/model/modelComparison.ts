@@ -5,10 +5,11 @@ import type { EmbeddingRecord, ResidualRecord, SplitName, SplitRecord, Work } fr
 import { cosine, meanVector, normalize } from "../core/vector.js";
 import { evaluateScores } from "../validation/metrics.js";
 import { ATTEMPTED_LOOKALIKE_TYPE, SAME_TOPIC_GENERIC_NEAR_MISS_TYPE } from "../validation/nearMissGate.js";
+import { cosineDeltaStyleScores } from "../stylometry/burrowsDelta.js";
 import type { StyleScore } from "../scoring/styleScoring.js";
 
 export interface ComparedModel {
-  id: "residual_margin" | "residual_margin_dual_gate" | "residual_margin_strict_dual_gate" | "residual_near_miss_contrast" | "residual_near_miss_contrast_strict" | "raw_margin" | "residual_target_similarity" | "raw_target_similarity";
+  id: "residual_margin" | "residual_margin_dual_gate" | "residual_margin_strict_dual_gate" | "residual_near_miss_contrast" | "residual_near_miss_contrast_strict" | "raw_margin" | "residual_target_similarity" | "raw_target_similarity" | "stylometric_cosine_delta";
   label: string;
   threshold: number;
   targetSimilarityThreshold?: number;
@@ -37,7 +38,7 @@ interface ModelVectors {
 
 export async function trainModelComparison(): Promise<TrainedStyleModel> {
   const vectors = await loadModelVectors();
-  const compared = await Promise.all(EMBEDDING_MODEL_DEFINITIONS.map((model) => compareModel(vectors, model, "validation")));
+  const compared = await Promise.all(MODEL_DEFINITIONS.map((model) => compareModel(vectors, model, "validation")));
   const selected = selectModel(compared);
   const dataset = datasetSummary(vectors.works, vectors.splits);
   return {
@@ -59,11 +60,16 @@ export async function trainModelComparison(): Promise<TrainedStyleModel> {
   };
 }
 
+export function isSelectableModelId(id: ComparedModel["id"]): boolean {
+  return !id.startsWith("stylometric");
+}
+
 function selectModel(compared: ComparedModel[]): ComparedModel {
-  const passingResiduals = compared
+  const selectable = compared.filter((model) => isSelectableModelId(model.id));
+  const passingResiduals = selectable
     .filter((model) => model.id.startsWith("residual") && meetsValidationAcceptance(model.validationMetrics))
     .sort(compareValidationModels);
-  return passingResiduals[0] ?? [...compared].sort(compareValidationModels)[0];
+  return passingResiduals[0] ?? [...selectable].sort(compareValidationModels)[0];
 }
 
 function meetsValidationAcceptance(metrics: Record<string, unknown>): boolean {
@@ -89,6 +95,10 @@ export async function scoreSplit(vectors: ModelVectors, modelId: ComparedModel["
   const trainIds = new Set(vectors.splits.filter((record) => record.split === "train").map((record) => record.workId));
   const trainTarget = vectors.works.filter((work) => work.set === "target" && trainIds.has(work.id));
   const trainBackground = vectors.works.filter((work) => work.set === "background" && trainIds.has(work.id));
+  if (modelId === "stylometric_cosine_delta") {
+    const scored = vectors.works.filter((work) => splitIds.has(work.id));
+    return cosineDeltaStyleScores(trainTarget, trainBackground, scored).map((score) => ({ ...score, predictedTarget: score.styleMargin >= threshold }));
+  }
   const trainNearMiss = trainBackground.filter((work) => [SAME_TOPIC_GENERIC_NEAR_MISS_TYPE, ATTEMPTED_LOOKALIKE_TYPE].includes(String(work.metadata?.syntheticControlType)));
   const vectorMap = modelId.startsWith("raw") ? vectors.rawVectors : vectors.residualVectors;
   const targetCentroid = centroid(trainTarget.map((work) => vectorMap.get(work.id)));
@@ -130,7 +140,7 @@ export async function scoreSplit(vectors: ModelVectors, modelId: ComparedModel["
     });
 }
 
-export async function compareModel(vectors: ModelVectors, model: (typeof EMBEDDING_MODEL_DEFINITIONS)[number], split: SplitName): Promise<ComparedModel> {
+export async function compareModel(vectors: ModelVectors, model: (typeof MODEL_DEFINITIONS)[number], split: SplitName): Promise<ComparedModel> {
   const unthresholded = await scoreSplit(vectors, model.id, split, Number.NEGATIVE_INFINITY);
   const chosen: { threshold: number; targetSimilarityThreshold?: number } = model.id === "residual_margin_dual_gate" || model.id === "residual_margin_strict_dual_gate"
     ? chooseDualGateThresholds(unthresholded, { preferStrictSimilarityFloor: model.id === "residual_margin_strict_dual_gate" })
@@ -160,7 +170,7 @@ export async function loadModelVectors(): Promise<ModelVectors> {
   };
 }
 
-function chooseThreshold(scores: StyleScore[]): number {
+export function chooseThreshold(scores: StyleScore[]): number {
   const values = [...new Set(scores.map((score) => score.styleMargin))].sort((a, b) => a - b);
   const candidates = [values[0] - 1e-6, ...values.slice(0, -1).map((value, index) => (value + values[index + 1]) / 2), values[values.length - 1] + 1e-6];
   return candidates
@@ -270,7 +280,7 @@ function limitations(summary: ReturnType<typeof datasetSummary>): string[] {
   ];
 }
 
-export const EMBEDDING_MODEL_DEFINITIONS = [
+export const MODEL_DEFINITIONS = [
   { id: "residual_margin", label: "Residual target-minus-background centroid margin" },
   { id: "residual_margin_dual_gate", label: "Residual margin plus target-centroid similarity floor" },
   { id: "residual_margin_strict_dual_gate", label: "Residual margin plus recall-tolerant target-centroid similarity floor" },
@@ -278,5 +288,6 @@ export const EMBEDDING_MODEL_DEFINITIONS = [
   { id: "residual_near_miss_contrast_strict", label: "Residual target-minus-near-miss contrast margin with recall-tolerant threshold" },
   { id: "raw_margin", label: "Raw target-minus-background centroid margin" },
   { id: "residual_target_similarity", label: "Residual target centroid similarity" },
-  { id: "raw_target_similarity", label: "Raw target centroid similarity" }
+  { id: "raw_target_similarity", label: "Raw target centroid similarity" },
+  { id: "stylometric_cosine_delta", label: "Cosine-delta function-word stylometry baseline (reported only, never selected)" }
 ] as const;
