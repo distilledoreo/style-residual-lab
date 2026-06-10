@@ -27,6 +27,7 @@
     "experiment:selected-target": "tsx src/cli/run-selected-target-experiment.ts",
     "audit:modern-experiments": "tsx src/cli/audit-modern-experiments.ts",
     "import:local-dataset": "tsx src/cli/import-local-dataset.ts",
+    "benchmark:authors": "tsx src/cli/run-author-benchmark.ts",
     "hard-negatives": "tsx src/cli/build-hard-negative-corpus.ts",
     "test": "vitest run"
   },
