@@ -293,6 +293,26 @@ npm run experiment:burns
 
 This prepares a small target corpus of public-domain Burns poetry excerpts, writes all outputs under `data/experiments/robert-burns/`, generates the standard synthetic background controls, and runs the same import, split, topic, embedding, residual, centroid, training, and held-out evaluation pipeline. The fixture exists for portability testing and cross-corpus sanity checks; because it uses short excerpts and synthetic controls, its metrics should be treated as diagnostic rather than high-confidence evidence about Burns's full style.
 
+## Stylometric Baseline (Cosine Delta)
+
+Model training and held-out evaluation also score a classical stylometry baseline, `stylometric_cosine_delta`: the top-150 most frequent words of the train split (function words dominate), z-scored relative frequencies in the Burrows tradition, and cosine similarity of a work's z-vector to the train target and background profiles, thresholded as a margin like the embedding models. Function-word distributions are naturally topic-poor, which makes this the standard reference point for small-corpus authorship problems.
+
+The baseline appears in every validation and test comparison table but is never eligible for selection, so the core experiment stays residual-versus-raw embeddings. Read it as a bar to clear: if the embedding models cannot match the cosine-delta row, the embedding experiment has not yet demonstrated value over classical stylometry. Vocabulary and z-statistics are built from the train split only.
+
+## Multi-Author Benchmark
+
+A single private corpus gives one anecdote per run. The author benchmark turns a labeled lyrics dataset into many author-versus-rest tasks so method comparisons rest on a distribution instead:
+
+```powershell
+npm run benchmark:authors -- --source data/private/downloads/tcc_ceds_music.csv --text-column lyrics --author-column artist_name --title-column track_name
+```
+
+Each selected author becomes one task: that author's works are the target set and the other selected authors' works are the background set. Splits are deterministic per task and stratified by author; thresholds are chosen on each task's validation split only and applied unchanged to its test split. The report aggregates held-out metrics across tasks as mean and normal-approximation 95% confidence intervals, written to `data/reports/author_benchmark/`.
+
+Options: `--min-works 12` (eligibility floor per author), `--max-authors 10`, `--max-works-per-author 24`, `--max-background 120`, `--min-chars 200`, `--seed`, `--limit`. The base run uses only the cosine-delta model and needs no API keys or model downloads. Pass `--with-embeddings` to also score a raw embedding centroid margin per task with the configured embedding provider and get a per-task head-to-head; with `OPENAI_API_KEY` set this calls the paid embedding API once per unique work.
+
+Caveat: author identity correlates with topic, so high benchmark scores alone do not prove topic-invariance. Keep the same-topic near-miss and attempted-lookalike gates as the complementary check.
+
 ## Validation
 
 Evaluation uses deterministic train/validation/test splits for both target and background works. Synthetic background controls are stratified by control type so train, validation, and test each see every generated negative/control family when enough examples exist.
@@ -307,6 +327,8 @@ Training compares multiple simple models:
 - raw target-minus-background centroid margin,
 - residual target centroid similarity,
 - raw target centroid similarity.
+
+A cosine-delta function-word stylometry baseline is scored alongside these in every comparison table; it is reported for contrast only and is never eligible for selection (see the Stylometric Baseline section above).
 
 The selected threshold is chosen on the validation split only and then applied unchanged to the test split. For dual-gate residual models, validation also selects a minimum target-centroid similarity floor. The standard dual gate optimizes the same validation metrics as the other models. The strict dual gate prefers the highest target-similarity floor that still meets the configured validation acceptance thresholds, allowing the configured recall floor rather than requiring perfect validation recall. A candidate must clear both the residual margin threshold and the target-similarity floor to be accepted by either dual-gate model. The near-miss contrast model uses train-split same-topic generic and attempted-lookalike controls as an additional negative centroid and scores target similarity against the stronger of broad-background similarity and hard-negative similarity. When the strict contrast model still meets validation acceptance, selection prefers it because the intended use is adversarial rejection of plausible failed drafts, not maximizing permissive recall. Handcrafted domain traits are not used for classification or model selection; they are only optional diagnostics so the core experiment lives or dies on raw embeddings versus topic-normalized residual embeddings.
 
